@@ -1,3 +1,5 @@
+const validator = require('validator')
+
 const getTagTexts = (tagObjList) => {
   let dataText = ''
 
@@ -35,26 +37,35 @@ exports.getHolidays = (rows) => {
 
       switch (j) {
         case 0:
-          holiday[fields[0]] = getTagTexts(rows[i]['children'][j]['children'])
+          // holiday date
+          let date = getTagTexts(rows[i]['children'][j]['children']) + ' 2019'
+          date = validator.toDate(date)
+          holiday[fields[0]] = date
           break;
         case 1:
+          // weekday
           holiday[fields[1]] = getTagTexts(rows[i]['children'][j]['children'])
           break;
         case 2:
+          // holiday name
           holiday[fields[2]] = getTagTexts(rows[i]['children'][j]['children'])
           break
         case 3:
+          // holiday type
           holiday[fields[3]] = getTagTexts(rows[i]['children'][j]['children'])
           break;
         case 4:
-          holiday[fields[4]] = getTagTexts(rows[i]['children'][j]['children'])
-          break;
+          // observed
+          let field4 = getTagTexts(rows[i]['children'][j]['children'])
+          if (!validator.isEmpty(field4, { ignore_whitespace: true })) {
+            holiday[fields[4]] = getTagTexts(rows[i]['children'][j]['children'])
+            break;
+          }
       }
     }
 
     holidayList.push(holiday)
   }
-
   return holidayList
 }
 
