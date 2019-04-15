@@ -1,5 +1,7 @@
-const { holidayData } = require('../scraper/scraper')
-const { Holiday } = require('./models/holiday')
+require('./mongoose')
+const holidayData = require('../scraper/scraper')
+const Holiday = require('../models/holiday')
+
 
 // inserts documents to a holidays collection
 holidayData.then(resultObj => {

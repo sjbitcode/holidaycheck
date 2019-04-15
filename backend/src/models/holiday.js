@@ -25,6 +25,5 @@ const holidaySchema = {
     trim: true
   }
 }
-Holiday = mongoose.model('Holiday', holidaySchema)
 
-module.exports = Holiday
+module.exports = mongoose.model('Holiday', holidaySchema)
