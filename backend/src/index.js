@@ -3,6 +3,7 @@ require('./db/mongoose')
 const User = require('./models/user')
 const Task = require('./models/task')
 const Holiday = require('./models/holiday')
+const Birthday = require('./models/birthday')
 const { PORT } = require('../config')
 
 const app = express()
@@ -152,9 +153,89 @@ app.post('/tasks', (req, res) => {
 app.get('/holidays', async (req, res) => {
 
   console.log('Going to get holidays')
+  console.log(req.query)
+
+  let { name, type, date, weekday, month, after, before } = req.query
+
+  console.log('name', name)
+  console.log('type', type)
+  console.log('date', date)
+  console.log('weekday', weekday)
+  console.log('month', month)
+  console.log('after', after)
+  console.log('before', before)
+
+  const queries = []
+
+  if (name) queries.push({ holidayName: { $regex: name, $options: 'i' } })
+
+  if (type) queries.push({ holidayType: { $regex: type, $options: 'i' } })
+
+  if (weekday) queries.push({ weekday: { $regex: weekday, $options: 'i' } })
+
+  /*
+    If  (date, month, after, before) are passed together,
+    the date is queried based on the following prority:
+      1 - date
+      2 - month
+      3 - after/before
+  */
+  if (date) {
+    // cannot query by specific date, query between date and next day
+    const onDate = new Date(date)
+    const dayAfter = new Date(onDate.toString())
+    dayAfter.setDate(onDate.getDate() + 1)
+
+    queries.push(
+      { date: { $gte: onDate, $lt: dayAfter } }
+    )
+  }
+  else if (month) {
+    // JS months start from 0
+    month = month - 1
+
+    // get first and last days of the month
+    const year = new Date().getFullYear()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+
+    queries.push(
+      { date:  { $gte: firstDay, $lte: lastDay } }
+    )
+  }
+  else if (after || before) {
+    let dateQuery = { date: {} }
+
+    if (after) {
+      console.log(new Date(after))
+      dateQuery.date['$gt'] = after
+    }
+    if (before) {
+      dateQuery.date['$lt'] = before
+    }
+
+    queries.push(dateQuery)
+  }
+
+  console.log(queries)
 
   try {
-    const holidays = await Holiday.find().limit(10).sort('date').select('-_id -__v')
+    // const holidays = await Holiday.find().limit(10).sort('date').select('-_id -__v')
+    // const holidays = await Holiday.find().limit(10).sort('date').select('-__v')
+    // const something = 'chri'
+    const holidays = await Holiday.find({
+      // date: new Date('2019-12-25')
+      $and: queries
+      // $text: { $search: 'wali' }
+      // $text: { $search: 'diwali' }
+      // $and: [
+        // { holidayName: { $regex: undefined, $options: 'i' } },
+        // { date: { $gte: 'something' } },
+        // { weekday: null }
+        // { $text: { $search: /chri/i } }
+        // { holidayType: "Hindu Holiday" }
+      // ]
+    }).limit(10).sort('date').select('-__v')
 
     if (!holidays) {
       return res.status(400).send()
@@ -162,12 +243,31 @@ app.get('/holidays', async (req, res) => {
     res.status(200).send(holidays)
 
   } catch (e) {
-    res.status(500).send('Internal error')
+    res.status(500).send()
   }
 })
 
-app.get('/holidays/search', (req, res) => {
-  console.log(req.query)
+app.get('/holidays/types', async (req, res) => {
+  // console.log(req.query)
+  try {
+    const holidayTypes = await Holiday.distinct('holidayType')
+    res.send(holidayTypes)
+  } catch (e) {
+    res.status(500).send()
+  }
+})
+
+app.get('/birthdays', async (req, res) => {
+  try {
+    const birthdays = await Birthday.find({})
+    if (!birthdays) {
+      return res.status(400).send()
+    }
+    // res.status(200).send(birthdays)
+    res.send(birthdays)
+  } catch(e) {
+    res.status(500).send()
+  }
 })
 
 app.listen(port, () => {

@@ -1,8 +1,8 @@
 const mongoose = require('mongoose')
 
-const holidaySchema = {
+const holidaySchema = new mongoose.Schema({
   date: {
-    type: String,
+    type: Date,
     required: true
   },
   weekday: {
@@ -23,7 +23,13 @@ const holidaySchema = {
   observed: {
     type: String,
     trim: true
+  },
+  footnote: {
+    type: String,
+    trim: true
   }
-}
+});
+
+holidaySchema.index({ '$**': 'text' })
 
 module.exports = mongoose.model('Holiday', holidaySchema)

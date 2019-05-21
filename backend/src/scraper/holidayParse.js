@@ -40,35 +40,42 @@ exports.getHolidays = (rows) => {
           // holiday date
           let date = getTagTexts(rows[i]['children'][j]['children']) + ' 2019'
           date = validator.toDate(date)
+
+          // remove timezone offset
+          date.setUTCHours(0, 0, 0, 0)
+
           holiday[fields[0]] = date
           break;
         case 1:
           // weekday
-          holiday[fields[1]] = getTagTexts(rows[i]['children'][j]['children'])
+          let weekday = getTagTexts(rows[i]['children'][j]['children'])
+          holiday[fields[1]] = weekday
           break;
         case 2:
           // holiday name
-          holiday[fields[2]] = getTagTexts(rows[i]['children'][j]['children'])
+          let name = getTagTexts(rows[i]['children'][j]['children'])
+          holiday[fields[2]] = name
           break
         case 3:
           // holiday type
-          holiday[fields[3]] = getTagTexts(rows[i]['children'][j]['children'])
+          let type = getTagTexts(rows[i]['children'][j]['children'])
+          holiday[fields[3]] = type
           break;
         case 4:
           // observed
           let field4 = getTagTexts(rows[i]['children'][j]['children'])
           if (!validator.isEmpty(field4, { ignore_whitespace: true })) {
-            holiday[fields[4]] = getTagTexts(rows[i]['children'][j]['children'])
+            let observed = getTagTexts(rows[i]['children'][j]['children'])
+            holiday[fields[4]] = observed
             break;
           }
       }
     }
 
-    holidayList.push(holiday)
+    // if not empty object
+    if (Object.keys(holiday).length) {
+      holidayList.push(holiday)
+    }
   }
   return holidayList
 }
-
-exports.Hello = 'Hey there!'
-
-exports.color = 'red'

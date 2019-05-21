@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const { DB_URL, DB_NAME} = require('../../config')
+const {DB_URL, DB_NAME} = require('../../config')
 
 const connectionURL = DB_URL
 const databaseName = DB_NAME

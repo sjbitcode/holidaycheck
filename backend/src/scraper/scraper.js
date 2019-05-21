@@ -5,7 +5,7 @@ const holidayParse = require('./holidayParse')
 const URL = 'https://www.timeanddate.com/holidays/us/'
 
 const holidayData = rp(URL).then(html => {
-  const table = $('table', html)
+  const table = $('table#holidays-table', html)
   const tbody = table.find('tbody')
   const tfooter = table.find('tfoot')
 
@@ -17,7 +17,8 @@ const holidayData = rp(URL).then(html => {
   
   return {
     'holidays': holidaysList,
-    'footnotes': footnotes
+    'footnotes': footnotes,
+    'count': holidaysList.length
   }
 })
 
