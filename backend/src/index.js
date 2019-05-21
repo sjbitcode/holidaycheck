@@ -3,7 +3,6 @@ require('./db/mongoose')
 const User = require('./models/user')
 const Task = require('./models/task')
 const Holiday = require('./models/holiday')
-const Birthday = require('./models/birthday')
 const { PORT } = require('../config')
 
 const app = express()
@@ -208,10 +207,10 @@ app.get('/holidays', async (req, res) => {
 
     if (after) {
       console.log(new Date(after))
-      dateQuery.date['$gt'] = after
+      dateQuery.date['$gt'] = new Date(after)
     }
     if (before) {
-      dateQuery.date['$lt'] = before
+      dateQuery.date['$lt'] = new Date(before)
     }
 
     queries.push(dateQuery)
@@ -220,22 +219,33 @@ app.get('/holidays', async (req, res) => {
   console.log(queries)
 
   try {
-    // const holidays = await Holiday.find().limit(10).sort('date').select('-_id -__v')
-    // const holidays = await Holiday.find().limit(10).sort('date').select('-__v')
-    // const something = 'chri'
-    const holidays = await Holiday.find({
-      // date: new Date('2019-12-25')
-      $and: queries
-      // $text: { $search: 'wali' }
-      // $text: { $search: 'diwali' }
-      // $and: [
-        // { holidayName: { $regex: undefined, $options: 'i' } },
-        // { date: { $gte: 'something' } },
-        // { weekday: null }
-        // { $text: { $search: /chri/i } }
-        // { holidayType: "Hindu Holiday" }
-      // ]
-    }).limit(10).sort('date').select('-__v')
+    // const holidays = await Holiday.find({
+    //   $and: queries
+    // }).limit(10).sort('date').select('-__v')
+    // let holidays = undefined
+
+    let pipelineStages = [
+      {
+        $project: {
+          _id: 0,
+          id: "$_id",
+          name: "$holidayName",
+          type: "$holidayType",
+          date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } }
+        }
+      },
+      { $limit: 20 },
+      { $sort: { date: 1 } }
+    ]
+
+    if (queries.length) {
+      pipelineStages.unshift(
+        { $match: { $and: queries } }
+      )
+      console.log(pipelineStages)
+    }
+
+    const holidays = await Holiday.aggregate(pipelineStages)
 
     if (!holidays) {
       return res.status(400).send()
@@ -253,19 +263,6 @@ app.get('/holidays/types', async (req, res) => {
     const holidayTypes = await Holiday.distinct('holidayType')
     res.send(holidayTypes)
   } catch (e) {
-    res.status(500).send()
-  }
-})
-
-app.get('/birthdays', async (req, res) => {
-  try {
-    const birthdays = await Birthday.find({})
-    if (!birthdays) {
-      return res.status(400).send()
-    }
-    // res.status(200).send(birthdays)
-    res.send(birthdays)
-  } catch(e) {
     res.status(500).send()
   }
 })
