@@ -4,6 +4,8 @@ const User = require('./models/user')
 const Task = require('./models/task')
 const Holiday = require('./models/holiday')
 const { PORT } = require('../config')
+const mongoose = require('mongoose')
+const ObjectId = mongoose.Types.ObjectId
 
 const app = express()
 const port = PORT
@@ -128,16 +130,6 @@ app.get('/tasks/:id', async (req, res) => {
   } catch (e) {
     res.status(500).send()
   }
-
-  // Task.findById(_id).then((task) => {
-  //   if (!task) {
-  //     return res.status(404).send()
-  //   }
-
-  //   res.send(task)
-  // }).catch(() => {
-  //   res.status(500).send()
-  // })
 })
 
 app.post('/tasks', (req, res) => {
@@ -252,6 +244,59 @@ app.get('/holidays', async (req, res) => {
     }
     res.status(200).send(holidays)
 
+  } catch (e) {
+    res.status(500).send()
+  }
+})
+
+app.get('/holidays/:id', async (req, res) => {
+  const _id = req.params.id
+  try {
+    const holiday = await Holiday.aggregate([
+      { $match: { _id: ObjectId(_id) } },
+      {
+        $project: {
+          _id: 0,
+          id: "$_id",
+          name: "$holidayName",
+          type: "$holidayType",
+          date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+          weekday: "$weekday",
+          // observed: {
+          //   $cond: {
+          //     if: { $ne: ["$observed", null] },
+          //     then: "$observed",
+          //     else: "$$REMOVE"
+          //   }
+          // },
+          observed: {
+            $cond: {
+              if: { $ne: ["$observed", null] },
+              then: {
+                $cond: {
+                  if: { $ne: ["$footnote", null] },
+                  then: { location: "$observed", footnote: "$footnote" },
+                  else: "$observed"
+              }
+            },
+              else: "$$REMOVE"
+            }
+          },
+          // locations: {
+          //   $cond: {
+          //     if: { $ne: ["$footnote", null] },
+          //     then: "$footnote",
+          //     else: "$$REMOVE"
+          //   }
+          // }
+        }
+      },
+      { $limit: 1 }
+    ])
+    if (!holiday) {
+      return res.status(404).send()
+    }
+    res.send(holiday)
   } catch (e) {
     res.status(500).send()
   }
