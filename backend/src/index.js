@@ -262,33 +262,19 @@ app.get('/holidays/:id', async (req, res) => {
           type: "$holidayType",
           date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
           weekday: "$weekday",
-          // observed: {
-          //   $cond: {
-          //     if: { $ne: ["$observed", null] },
-          //     then: "$observed",
-          //     else: "$$REMOVE"
-          //   }
-          // },
           observed: {
-            $cond: {
-              if: { $ne: ["$observed", null] },
-              then: {
-                $cond: {
-                  if: { $ne: ["$footnote", null] },
-                  then: { location: "$observed", footnote: "$footnote" },
-                  else: "$observed"
-              }
+            $cond: [
+              { $gt: ["$observed", null] },
+              {
+                $cond: [
+                  { $gt: ["$footnote", null] },
+                  { locations: "$observed", footnote: "$footnote" },
+                  { locations: "$observed" },
+                ]
             },
-              else: "$$REMOVE"
-            }
+            "$$REMOVE"
+            ]
           },
-          // locations: {
-          //   $cond: {
-          //     if: { $ne: ["$footnote", null] },
-          //     then: "$footnote",
-          //     else: "$$REMOVE"
-          //   }
-          // }
         }
       },
       { $limit: 1 }
