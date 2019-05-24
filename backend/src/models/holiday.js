@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const moment = require('moment')
 
 const holidaySchema = new mongoose.Schema({
   date: {
@@ -30,6 +31,20 @@ const holidaySchema = new mongoose.Schema({
   }
 });
 
-holidaySchema.index({ '$**': 'text' })
+// holidaySchema.index({ '$**': 'text' })
+holidaySchema.virtual('calcWeekday').get(function() {
+  const date = moment(this.date)
+  return date._locale._weekdays[date.weekday()]
+})
+
+holidaySchema.virtual('daysFrom').get(function() {
+  const date = moment(this.date)
+  const today = moment().startOf('day')
+  let days = date.diff(today, 'days')
+  return days
+})
+
+holidaySchema.set('toJSON', { virtuals: true })
+holidaySchema.set('toObject', { virtuals: true, getters: true })
 
 module.exports = mongoose.model('Holiday', holidaySchema)

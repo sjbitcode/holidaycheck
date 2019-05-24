@@ -39,12 +39,18 @@ exports.getHolidays = (rows) => {
         case 0:
           // holiday date
           let date = getTagTexts(rows[i]['children'][j]['children']) + ' 2019'
-          date = validator.toDate(date)
+          // date = validator.toDate(date)
+          let fullDate = new Date(date)
+          // fullDate.setHours(0, 0, 0, 0)
+          // let utcDate = new Date(Date.UTC(
+          //   fullDate.getFullYear(), fullDate.getMonth() + 1, fullDate.getDate()
+          // ))
+          // let dateParts = date.split(' ')
 
           // remove timezone offset
-          date.setUTCHours(0, 0, 0, 0)
+          // date.setUTCHours(0, 0, 0, 0)
 
-          holiday[fields[0]] = date
+          holiday[fields[0]] = fullDate
           break;
         case 1:
           // weekday

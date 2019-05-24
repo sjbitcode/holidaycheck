@@ -5,6 +5,7 @@ const Task = require('./models/task')
 const Holiday = require('./models/holiday')
 const { PORT } = require('../config')
 const mongoose = require('mongoose')
+const moment = require('moment')
 const ObjectId = mongoose.Types.ObjectId
 
 const app = express()
@@ -141,6 +142,25 @@ app.post('/tasks', (req, res) => {
   })
 })
 
+app.get('/holidays/types', async (req, res) => {
+  try {
+    const holidayTypes = await Holiday.aggregate([
+      { 
+        $group: {
+          _id: null,
+          types: { $addToSet: "$holidayType" }
+        }
+      },
+      {
+        $project: { "_id": 0 }
+      }
+    ])
+    res.send(holidayTypes)
+  } catch (e) {
+    res.status(500).send()
+  }
+})
+
 app.get('/holidays', async (req, res) => {
 
   console.log('Going to get holidays')
@@ -173,25 +193,30 @@ app.get('/holidays', async (req, res) => {
   */
   if (date) {
     // cannot query by specific date, query between date and next day
-    const onDate = new Date(date)
-    const dayAfter = new Date(onDate.toString())
-    dayAfter.setDate(onDate.getDate() + 1)
+    // const onDate = new Date(date)
+    const onDate = moment(date)
+    // const dayAfter = new Date(onDate.toString())
+    const dayAfter = moment(onDate).add(1, 'days')
+    // dayAfter.setDate(onDate.getDate() + 1)
 
     queries.push(
-      { date: { $gte: onDate, $lt: dayAfter } }
+      { date: { $gte: new Date(onDate), $lt: new Date(dayAfter) } }
     )
   }
   else if (month) {
     // JS months start from 0
-    month = month - 1
+    // month = month - 1
+
+    const firstDay = moment(month, 'M')
+    const lastDay = moment(firstDay).endOf('month')
 
     // get first and last days of the month
-    const year = new Date().getFullYear()
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
+    // const year = new Date().getFullYear()
+    // const firstDay = new Date(year, month, 1)
+    // const lastDay = new Date(year, month + 1, 0)
 
     queries.push(
-      { date:  { $gte: firstDay, $lte: lastDay } }
+      { date:  { $gte: new Date(firstDay), $lte: new Date(lastDay) } }
     )
   }
   else if (after || before) {
@@ -199,10 +224,12 @@ app.get('/holidays', async (req, res) => {
 
     if (after) {
       console.log(new Date(after))
-      dateQuery.date['$gt'] = new Date(after)
+      // dateQuery.date['$gt'] = new Date(after)
+      dateQuery.date['$gt'] = new Date(moment(after))
     }
     if (before) {
-      dateQuery.date['$lt'] = new Date(before)
+      // dateQuery.date['$lt'] = new Date(before)
+      dateQuery.date['$lt'] = new Date(moment(before))
     }
 
     queries.push(dateQuery)
@@ -222,7 +249,7 @@ app.get('/holidays', async (req, res) => {
           _id: 0,
           id: "$_id",
           name: "$holidayName",
-          type: "$holidayType",
+          // type: "$holidayType",
           date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } }
         }
       },
@@ -249,6 +276,27 @@ app.get('/holidays', async (req, res) => {
   }
 })
 
+const getWeekday = (date) => {
+  const holiday = moment(date)
+  return holiday._locale._weekdays[holiday.weekday()]
+}
+
+const daysFrom = (date) => {
+  const holiday = moment(date)
+  const today = moment().startOf('day')
+  let days = holiday.diff(today, 'days')
+  return `${days} days`
+}
+
+const monthDaysFrom = (date) => {
+  const holiday = moment(date)
+  const today = moment().startOf('day')
+  let months = holiday.diff(today, 'months')
+  today.add(months, 'months')
+  const days = holiday.diff(today, 'days')
+  return `${months} months ${days} days`
+}
+
 app.get('/holidays/:id', async (req, res) => {
   const _id = req.params.id
   try {
@@ -261,7 +309,7 @@ app.get('/holidays/:id', async (req, res) => {
           name: "$holidayName",
           type: "$holidayType",
           date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-          weekday: "$weekday",
+          // weekday: "$weekday",
           observed: {
             $cond: [
               { $gt: ["$observed", null] },
@@ -276,23 +324,17 @@ app.get('/holidays/:id', async (req, res) => {
             ]
           },
         }
-      },
-      { $limit: 1 }
+      }
     ])
     if (!holiday) {
       return res.status(404).send()
     }
+    console.log('BEFORE SENDING BACK TO CLIENT')
+    const date = (holiday[0]['date'])
+    holiday[0]['weekday'] = getWeekday(date)
+    holiday[0]['days difference'] = daysFrom(date)
+    holiday[0]['month difference'] = monthDaysFrom(date)
     res.send(holiday)
-  } catch (e) {
-    res.status(500).send()
-  }
-})
-
-app.get('/holidays/types', async (req, res) => {
-  // console.log(req.query)
-  try {
-    const holidayTypes = await Holiday.distinct('holidayType')
-    res.send(holidayTypes)
   } catch (e) {
     res.status(500).send()
   }
