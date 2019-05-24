@@ -166,23 +166,38 @@ app.get('/holidays', async (req, res) => {
   console.log('Going to get holidays')
   console.log(req.query)
 
-  let { name, type, date, weekday, month, after, before } = req.query
+  let { name, type, date, month, after, before, sortBy, peek, page } = req.query
 
   console.log('name', name)
   console.log('type', type)
   console.log('date', date)
-  console.log('weekday', weekday)
+  // console.log('weekday', weekday)
   console.log('month', month)
   console.log('after', after)
   console.log('before', before)
+  console.log('sortBy', sortBy)
+  console.log('peek', peek)
 
   const queries = []
+  const sort = {}
+  const options = {
+    page: page,
+    limit: 10
+  }
+
+  if (sortBy) {
+    const parts = sortBy.split(':')
+    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
+  }
+  else {
+    sort['date'] = 1
+  }
 
   if (name) queries.push({ holidayName: { $regex: name, $options: 'i' } })
 
   if (type) queries.push({ holidayType: { $regex: type, $options: 'i' } })
 
-  if (weekday) queries.push({ weekday: { $regex: weekday, $options: 'i' } })
+  // if (weekday) queries.push({ weekday: { $regex: weekday, $options: 'i' } })
 
   /*
     If  (date, month, after, before) are passed together,
@@ -234,6 +249,13 @@ app.get('/holidays', async (req, res) => {
 
     queries.push(dateQuery)
   }
+  else if (peek) {
+    const today = moment().startOf('day')
+    const peekTo = moment(today).add(peek, 'days')
+    queries.push(
+      { date: { $gte: new Date(today), $lte: new Date(peekTo) } }
+    )
+  }
 
   console.log(queries)
 
@@ -249,12 +271,13 @@ app.get('/holidays', async (req, res) => {
           _id: 0,
           id: "$_id",
           name: "$holidayName",
-          // type: "$holidayType",
+          type: "$holidayType",
           date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } }
         }
       },
-      { $limit: 20 },
-      { $sort: { date: 1 } }
+      // { $limit: 20 },
+      // { $sort: { date: 1 } }
+      { $sort: sort }
     ]
 
     if (queries.length) {
@@ -264,12 +287,13 @@ app.get('/holidays', async (req, res) => {
       console.log(pipelineStages)
     }
 
-    const holidays = await Holiday.aggregate(pipelineStages)
+    const holidays = Holiday.aggregate(pipelineStages)
+    const holidaysPaginated = await Holiday.aggregatePaginate(holidays, options)
 
     if (!holidays) {
       return res.status(400).send()
     }
-    res.status(200).send(holidays)
+    res.status(200).send(holidaysPaginated)
 
   } catch (e) {
     res.status(500).send()
@@ -317,7 +341,8 @@ app.get('/holidays/:id', async (req, res) => {
                 $cond: [
                   { $gt: ["$footnote", null] },
                   { locations: "$observed", footnote: "$footnote" },
-                  { locations: "$observed" },
+                  // { locations: "$observed" },
+                  "$observed"
                 ]
             },
             "$$REMOVE"

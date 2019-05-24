@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const moment = require('moment')
+const aggregatePaginate = require('mongoose-aggregate-paginate-v2')
 
 const holidaySchema = new mongoose.Schema({
   date: {
@@ -46,5 +47,7 @@ holidaySchema.virtual('daysFrom').get(function() {
 
 holidaySchema.set('toJSON', { virtuals: true })
 holidaySchema.set('toObject', { virtuals: true, getters: true })
+
+holidaySchema.plugin(aggregatePaginate)
 
 module.exports = mongoose.model('Holiday', holidaySchema)
