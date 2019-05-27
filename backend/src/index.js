@@ -161,6 +161,91 @@ app.get('/holidays/types', async (req, res) => {
   }
 })
 
+app.get('/holidays/stats', async (req, res) => {
+  const today = moment().startOf('day')
+  try {
+    const holidayCategories = await Holiday.aggregate([
+      {
+        $facet: {
+          "categorizedByType": [
+            {
+              $group: {
+                _id: "$holidayType",
+                count: { $sum: 1}
+              }
+            },
+            {
+              $project: { 
+                "_id": 0,
+                name: "$_id",
+                count: 1
+              }
+            },
+            {
+              $sort: {
+                name: 1
+              }
+            }
+          ],
+          "categorizedByMonth": [
+            {
+              $group: {
+                _id: { "month": {$month: "$date"}, "type": "$holidayType"},
+                count: { $sum: 1 }
+              }
+            },
+            {
+              $group: {
+                "_id": "$_id.month",
+                "totalHolidays": { "$sum": "$count" },
+                "holidayTypeCount": {
+                  "$push": { "type": "$_id.type", "count": "$count" }
+                }
+              }
+            },
+            {
+              $project: {
+                _id: 0,
+                _holidayTypeCount: "$holidayTypeCount",
+                _totalHolidays: "$totalHolidays",
+                _month: "$_id",
+                _monthString: {
+                  $let: {
+                    vars: {
+                      monthsInString: [, 'January', 'February', 'March', 'April',
+                                       'May', 'June', 'July', 'August', 'September',
+                                       'October', 'November', 'December']
+                    },
+                    in: {
+                      $arrayElemAt: ["$$monthsInString", "$_id"]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              $project: {
+                month: "$_month",
+                monthString: "$_monthString",
+                totalHolidays: "$_totalHolidays",
+                holidayTypeCount: "$_holidayTypeCount"
+              }
+            },
+            {
+              $sort: {
+                month: 1
+              }
+            }
+          ]
+        }
+      }
+    ])
+    res.send(holidayCategories)
+  } catch (e) {
+    res.status(500).send()
+  }
+})
+
 app.get('/holidays', async (req, res) => {
 
   console.log('Going to get holidays')
@@ -171,7 +256,6 @@ app.get('/holidays', async (req, res) => {
   console.log('name', name)
   console.log('type', type)
   console.log('date', date)
-  // console.log('weekday', weekday)
   console.log('month', month)
   console.log('after', after)
   console.log('before', before)
@@ -180,9 +264,14 @@ app.get('/holidays', async (req, res) => {
 
   const queries = []
   const sort = {}
+  const customLabels = {
+    totalDocs: 'totalHolidays',
+    docs: 'holidays'
+  }
   const options = {
     page: page,
-    limit: 10
+    limit: 10,
+    customLabels
   }
 
   if (sortBy) {
@@ -251,10 +340,22 @@ app.get('/holidays', async (req, res) => {
   }
   else if (peek) {
     const today = moment().startOf('day')
-    const peekTo = moment(today).add(peek, 'days')
-    queries.push(
-      { date: { $gte: new Date(today), $lte: new Date(peekTo) } }
-    )
+    // let peekTo = undefined
+    peek = parseInt(peek)
+
+    if (peek >= 0) {
+      const peekTo = moment(today).add(peek, 'days')
+      queries.push(
+        { date: { $gte: new Date(today), $lte: new Date(peekTo) } }
+      )
+    }
+    else {
+      const peekFrom = moment(today).subtract(Math.abs(peek), 'days')
+      queries.push(
+        { date: { $gte: new Date(peekFrom), $lte: new Date(today) } }
+      )
+    }
+    
   }
 
   console.log(queries)
@@ -305,20 +406,41 @@ const getWeekday = (date) => {
   return holiday._locale._weekdays[holiday.weekday()]
 }
 
-const daysFrom = (date) => {
+const calcDaysFrom = (date) => {
   const holiday = moment(date)
   const today = moment().startOf('day')
   let days = holiday.diff(today, 'days')
-  return `${days} days`
+  // return `${days} days`
+  return days
 }
 
-const monthDaysFrom = (date) => {
+const daysFromFmt = (days) => {
+  if (days >= 0) {
+    return `There are ${days} days until this holiday.`
+  }
+  else {
+    days = Math.abs(days)
+    return `This holiday occured ${days} days ago.`
+  }
+}
+
+const calcMonthDaysFrom = (date) => {
   const holiday = moment(date)
   const today = moment().startOf('day')
   let months = holiday.diff(today, 'months')
   today.add(months, 'months')
   const days = holiday.diff(today, 'days')
-  return `${months} months ${days} days`
+  // return `${months} months ${days} days`
+  return { months: months, days: days }
+}
+
+const monthDaysFromFmt = (monthsDays) => {
+  if (monthsDays.months >= 0) {
+    return `There are ${monthsDays.months} months and ${monthsDays.days} days until this holiday.`
+  }
+  else {
+    return `This holiday occured ${Math.abs(monthsDays.months)} months and ${Math.abs(monthsDays.days)} days ago.`
+  }
 }
 
 app.get('/holidays/:id', async (req, res) => {
@@ -357,14 +479,19 @@ app.get('/holidays/:id', async (req, res) => {
     console.log('BEFORE SENDING BACK TO CLIENT')
     const date = (holiday[0]['date'])
     holiday[0]['weekday'] = getWeekday(date)
-    holiday[0]['days difference'] = daysFrom(date)
-    holiday[0]['month difference'] = monthDaysFrom(date)
+
+    let daysFrom = calcDaysFrom(date)
+    let monthDaysFrom = calcMonthDaysFrom(date)
+    holiday[0]['daysDifference'] = daysFrom
+    holiday[0]['monthsDifference'] = monthDaysFrom
+    holiday[0]['daysDifferenceFormatted'] = daysFromFmt(daysFrom)
+    holiday[0]['monthsDifferenceFormatted'] = monthDaysFromFmt(monthDaysFrom)
     res.send(holiday)
   } catch (e) {
     res.status(500).send()
   }
 })
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Example app listening on port ${port}`)
 })
