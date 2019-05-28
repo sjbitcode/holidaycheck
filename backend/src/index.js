@@ -110,16 +110,9 @@ app.get('/tasks', async (req, res) => {
     res.status(500).send()
   }
 
-  // Task.find({}).then((tasks) => {
-  //   res.send(tasks)
-  // }).catch((e) => {
-  //   res.status(500).send()
-  // })
-
 })
 
 app.get('/tasks/:id', async (req, res) => {
-  // console.log(req.params.id)
   const _id = req.params.id
 
   try {
