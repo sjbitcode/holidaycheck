@@ -236,6 +236,14 @@ app.get('/holidays/stats', async (req, res) => {
                 month: 1
               }
             }
+          ],
+          "remaining": [
+            {
+              $match: { date: { $gte: new Date(today) } }
+            },
+            {
+              $count: "totalHolidays" 
+            }
           ]
         }
       }
