@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
 
 const typesPipeline = () => {
+  // Get distinct holiday types
   return [
     {
       $group: {
@@ -17,6 +18,7 @@ const typesPipeline = () => {
 }
 
 const statsCategorizedByType = () => {
+  // Group holidays by holiday type and count holidays per type
   return [
     {
       $group: {
@@ -27,27 +29,39 @@ const statsCategorizedByType = () => {
     {
       $project: {
         "_id": 0,
-        name: "$_id",
-        count: 1
+        _type: "$_id",
+        _count: "$count"
+      }
+    },
+    {
+      $project: {
+        type: "$_type",
+        count: "$_count"
       }
     },
     {
       $sort: {
-        name: 1
+        type: 1
       }
     }
   ]
 }
 
 const statsCategorizedByMonth = () => {
+  /*
+    Group holidays per month, count total holidays per
+    month, then group by type and count per type.
+  */
   return [
     {
+      // Group per month and type, and count total
       $group: {
         _id: { "month": { $month: "$date" }, "type": "$holidayType" },
         count: { $sum: 1 }
       }
     },
     {
+      // Second grouping, per type per month
       $group: {
         "_id": "$_id.month",
         "totalHolidays": { "$sum": "$count" },
@@ -57,6 +71,7 @@ const statsCategorizedByMonth = () => {
       }
     },
     {
+      // Format output fields
       $project: {
         _id: 0,
         _holidayTypeCount: "$holidayTypeCount",
@@ -77,6 +92,7 @@ const statsCategorizedByMonth = () => {
       }
     },
     {
+      // Ensure order of output fields
       $project: {
         month: "$_month",
         monthString: "$_monthString",
@@ -93,6 +109,7 @@ const statsCategorizedByMonth = () => {
 }
 
 const statsRemainingHolidays = () => {
+  // Get count of holidays from current date onwards
   const today = moment().startOf('day')
   return [
     {
@@ -105,6 +122,7 @@ const statsRemainingHolidays = () => {
 }
 
 const statsPipeline = () => {
+  // Get multiple aggregations on holidays
   return [
     {
       $facet: {
@@ -117,6 +135,7 @@ const statsPipeline = () => {
 }
 
 const holidayByIdPipeline = (id) => {
+  // Aggregate for a single holiday
   return [
     { $match: { _id: ObjectId(id) } },
     {
@@ -145,6 +164,7 @@ const holidayByIdPipeline = (id) => {
 }
 
 const holidaysDefaultPipeline = (sort) => {
+  // Default aggregate for all holidays endpoint
   return [
     {
       $project: {
@@ -160,6 +180,10 @@ const holidaysDefaultPipeline = (sort) => {
 }
 
 const holidaysStagesFromQueryParams = (name, type, date, month, after, before, peek) => {
+  /* 
+    Build aggregate stages from query parameters 
+    that will be used together to filter holidays.
+  */
   const queries = []
   if (name) queries.push({ holidayName: { $regex: name, $options: 'i' } })
   if (type) queries.push({ holidayType: { $regex: type, $options: 'i' } })
@@ -216,25 +240,25 @@ const holidaysStagesFromQueryParams = (name, type, date, month, after, before, p
   return queries
 }
 
-const holidayPipelineWrapper = (name, type, date, month, after, before, peek, sortBy) => {
+const holidayPipelineWrapper = (name, type, date, month, after, before, peek, sort) => {
   /*
     Create sort pipeline stage from query param, else default to date.
     Can sort by fields name, type, or date.
     Set sorting order by adding ":asc" or ":desc" after the sort field
     in query parameter.
     Ex.
-        sortBy=name:asc
-        sortBy=type:desc
+        sort=name:asc
+        sort=type:desc
   */
-  const sort = {}
-  if (sortBy) {
-    const parts = sortBy.split(':')
-    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
+  const sortStage = {}
+  if (sort) {
+    const parts = sort.split(':')
+    sortStage[parts[0]] = parts[1] === 'desc' ? -1 : 1
   }
   else {
-    sort['date'] = 1
+    sortStage['date'] = 1
   }
-  let pipeline = holidaysDefaultPipeline(sort)
+  let pipeline = holidaysDefaultPipeline(sortStage)
 
   /*
     Build aggregate expressions to match holidays by.
