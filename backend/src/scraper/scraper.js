@@ -2,7 +2,9 @@ const rp = require('request-promise')
 const $ = require('cheerio')
 const holidayParse = require('./holidayParse')
 
+
 const URL = 'https://www.timeanddate.com/holidays/us/'
+
 
 const holidayData = rp(URL).then(html => {
   const table = $('table#holidays-table', html)
@@ -21,5 +23,6 @@ const holidayData = rp(URL).then(html => {
     'count': holidaysList.length
   }
 })
+
 
 module.exports = holidayData
