@@ -85,5 +85,3 @@ typings/
 # misc
 .DS_Store
 misc/
-# config/*
-# !config/.env.example
