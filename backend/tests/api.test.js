@@ -1,14 +1,6 @@
 const request = require('supertest')
 const app = require('../src/app')
 
-// beforeEach(() => {
-//   console.log('Before each!!!')
-// })
-
-// afterEach(() => {
-//   console.log('After each!!!')
-// })
-
 test('Test root endpoint 200 status', async () => {
   await request(app)
           .get('/')

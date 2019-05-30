@@ -122,7 +122,7 @@ const statsRemainingHolidays = () => {
 }
 
 const statsPipeline = () => {
-  // Get multiple aggregations on holidays
+  // Get multiple aggregations (stats) on holidays
   return [
     {
       $facet: {
@@ -164,7 +164,7 @@ const holidayByIdPipeline = (id) => {
 }
 
 const holidaysDefaultPipeline = (sort) => {
-  // Default aggregate for all holidays endpoint
+  // Default aggregate for root holidays endpoint
   return [
     {
       $project: {

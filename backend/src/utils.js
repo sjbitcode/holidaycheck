@@ -1,12 +1,13 @@
 const moment = require('moment')
 
-
 const getWeekday = (date) => {
+  // Get weekday string from a date, ex. Monday
   const holiday = moment(date)
   return holiday._locale._weekdays[holiday.weekday()]
 }
 
 const calcDaysFrom = (date) => {
+  // Calculates the number of days from current day to given date
   const holiday = moment(date)
   const today = moment().startOf('day')
   let days = holiday.diff(today, 'days')
@@ -14,6 +15,7 @@ const calcDaysFrom = (date) => {
 }
 
 const daysFromFmt = (days) => {
+  // Formats string for day difference based on if days is positive or negative
   if (days >= 0) {
     if (days > 1 || days == 0) return `There are ${days} days until this holiday.`
     else return `There is ${days} day until this holiday.`
@@ -26,6 +28,7 @@ const daysFromFmt = (days) => {
 }
 
 const calcMonthDaysFrom = (date) => {
+  // Calculates the number of months and days from current day to given date
   const holiday = moment(date)
   const today = moment().startOf('day')
   let months = holiday.diff(today, 'months')
@@ -47,6 +50,8 @@ const getDayStr = (days) => {
 }
 
 const monthDaysFromFmt = (monthsDays) => {
+  // Formats string for month/day difference based on if 
+  // month and days are positive or negative
   let months = monthsDays.months
   let days = monthsDays.days
 
