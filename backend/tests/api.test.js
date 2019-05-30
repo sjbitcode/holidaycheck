@@ -1,13 +1,13 @@
 const request = require('supertest')
 const app = require('../src/app')
 
-beforeEach(() => {
-  console.log('Before each!!!')
-})
+// beforeEach(() => {
+//   console.log('Before each!!!')
+// })
 
-afterEach(() => {
-  console.log('After each!!!')
-})
+// afterEach(() => {
+//   console.log('After each!!!')
+// })
 
 test('Test root endpoint 200 status', async () => {
   await request(app)
@@ -33,7 +33,6 @@ test('Test holidays stats endpoint 200 status', async () => {
 test('Test holidays types endpoint 200 status', async () => {
   await request(app)
           .get('/holidays/types')
-          .expect('Content-Length', '1')
           .expect('Content-Type', /json/)
           .expect(200)
 })

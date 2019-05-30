@@ -15,11 +15,13 @@ const calcDaysFrom = (date) => {
 
 const daysFromFmt = (days) => {
   if (days >= 0) {
-    return `There are ${days} days until this holiday.`
+    if (days > 1 || days == 0) return `There are ${days} days until this holiday.`
+    else return `There is ${days} day until this holiday.`
   }
   else {
     days = Math.abs(days)
-    return `This holiday occured ${days} days ago.`
+    if (days > 1) return `This holiday occured ${days} days ago.`
+    else return `This holiday occured ${days} day ago.`
   }
 }
 
@@ -32,12 +34,29 @@ const calcMonthDaysFrom = (date) => {
   return { months: months, days: days }
 }
 
+const getMonthStr = (months) => {
+  // helper function to format month string
+  if (months > 1 || months == 0) return `${months} months`
+  else return `${months} month`
+}
+
+const getDayStr = (days) => {
+  // helper function to format day string
+  if (days > 1 || days == 0) return `${days} days`
+  else return `${days} day`
+}
+
 const monthDaysFromFmt = (monthsDays) => {
-  if (monthsDays.months >= 0) {
-    return `There are ${monthsDays.months} months and ${monthsDays.days} days until this holiday.`
+  let months = monthsDays.months
+  let days = monthsDays.days
+
+  if (months >= 0) {
+    return `There are ${getMonthStr(months)} and ${getDayStr(days)} until this holiday.`
   }
   else {
-    return `This holiday occured ${Math.abs(monthsDays.months)} months and ${Math.abs(monthsDays.days)} days ago.`
+    months = Math.abs(months)
+    days = Math.abs(days)
+    return `This holiday occured ${getMonthStr(months)} and ${getDayStr(days)} ago.`
   }
 }
 
