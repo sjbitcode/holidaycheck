@@ -18,8 +18,6 @@ provider:
     GW_URL: ${self:custom.${self:custom.stage}.GW_URL}
 
 functions:
-  # hello:
-  #   handler: handler.hello
   app:
     handler: handler.server
     events:
