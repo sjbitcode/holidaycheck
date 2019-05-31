@@ -1,12 +1,12 @@
 {
-  "name": "backend",
+  "name": "serverless-nodejs-app",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "env-cmd -f ./config/dev.env nodemon src/index.js",
-    "test": "env-cmd -f ./config/test.env jest --watch"
+    "dev": "env-cmd -f ./config/.env nodemon src/index.js",
+    "test": "env-cmd -f ./config/.env.test jest --watch"
   },
   "jest": {
     "testEnvironment": "node"
@@ -22,12 +22,15 @@
     "mongoose-aggregate-paginate-v2": "^1.0.2",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
+    "serverless-http": "^2.0.2",
     "validator": "^10.11.0"
   },
   "devDependencies": {
     "env-cmd": "^9.0.1",
     "jest": "^24.8.0",
     "nodemon": "^1.18.10",
+    "serverless-dotenv-plugin": "^2.1.1",
+    "serverless-offline": "^4.10.6",
     "supertest": "^4.0.2"
   }
 }

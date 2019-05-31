@@ -165,6 +165,7 @@ const holidayByIdPipeline = (id) => {
 
 const holidaysDefaultPipeline = (sort) => {
   // Default aggregate for root holidays endpoint
+  const ROOT = process.env.GW_URL || 'localhost:3000'
   return [
     {
       $project: {
@@ -172,7 +173,18 @@ const holidaysDefaultPipeline = (sort) => {
         id: "$_id",
         name: "$holidayName",
         type: "$holidayType",
-        date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } }
+        date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+        detailUrl: {
+          $let: {
+            vars: {
+              root: ROOT,
+              holidayId: { $toString: "$_id" }
+            },
+            in: {
+              $concat: ["$$root", "/holidays/", "$$holidayId"]
+            }
+          }
+        },
       }
     },
     { $sort: sort }

@@ -14,12 +14,13 @@ const {
   calcMonthDaysFrom,
   monthDaysFromFmt
 } = require('../utils')
+const ROOT = process.env.GW_URL || 'localhost:3000'
 
 router.get('/', (req, res) => {
   const endpoints = {
-    'List of holidays': '/holidays',
-    'List of holiday types': '/holidays/types',
-    'Holiday stats': '/holidays/stats'
+    'List of holidays': `${ROOT}/holidays`,
+    'List of holiday types': `${ROOT}/holidays/types`,
+    'Holiday stats': `${ROOT}/holidays/stats`
   }
   res.status(200).send(endpoints)
 })
