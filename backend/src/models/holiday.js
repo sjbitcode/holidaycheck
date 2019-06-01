@@ -46,4 +46,4 @@ holidaySchema.set('toObject', { virtuals: true, getters: true })
 holidaySchema.plugin(aggregatePaginate)
 
 
-module.exports = mongoose.model('Holiday', holidaySchema)
+module.exports = mongoose.models.Holiday || mongoose.model('Holiday', holidaySchema)
