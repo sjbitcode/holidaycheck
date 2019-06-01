@@ -1,14 +1,12 @@
 const mongoose = require('mongoose')
+const moment = require('moment')
+const aggregatePaginate = require('mongoose-aggregate-paginate-v2')
 
-const holidaySchema = {
+
+const holidaySchema = new mongoose.Schema({
   date: {
-    type: String,
+    type: Date,
     required: true
-  },
-  weekday: {
-    type: String,
-    required: true,
-    trim: true
   },
   holidayName: {
     type: String,
@@ -23,7 +21,29 @@ const holidaySchema = {
   observed: {
     type: String,
     trim: true
+  },
+  footnote: {
+    type: String,
+    trim: true
   }
-}
+});
 
-module.exports = mongoose.model('Holiday', holidaySchema)
+// Helpful virtuals to get weekday and days duration.
+holidaySchema.virtual('calcWeekday').get(function() {
+  const date = moment(this.date)
+  return date._locale._weekdays[date.weekday()]
+})
+holidaySchema.virtual('daysFrom').get(function() {
+  const date = moment(this.date)
+  const today = moment().startOf('day')
+  let days = date.diff(today, 'days')
+  return days
+})
+holidaySchema.set('toJSON', { virtuals: true })
+holidaySchema.set('toObject', { virtuals: true, getters: true })
+
+
+holidaySchema.plugin(aggregatePaginate)
+
+
+module.exports = mongoose.models.Holiday || mongoose.model('Holiday', holidaySchema)
